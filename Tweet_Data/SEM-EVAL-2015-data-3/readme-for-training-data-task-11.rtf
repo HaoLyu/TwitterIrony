@@ -1,0 +1,100 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1138\cocoasubrtf510
+{\fonttbl\f0\froman\fcharset0 Times-Roman;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww14840\viewh11280\viewkind0
+\deftab709
+\pard\pardeftab709\pardirnatural
+
+\f0\b\fs38 \cf0 Representing Multilevel Sentiment Annotated Data\
+\pard\pardeftab709\pardirnatural
+
+\b0 \cf0 \
+\pard\pardeftab709\pardirnatural
+
+\b \cf0 Introduction:\
+\pard\pardeftab709\pardirnatural
+
+\b0 \cf0 \
+We present a newly collected training dataset of 8000 figurative English tweets. The dataset consists of ironic, sarcastic and metaphorical tweets. The corpus is annotated manually on an 11 point scale (-5 to +5, including 0). This brief report highlights some initial findings on the annotated data which is intended to serve as training data for a sentiment analysis task on figurative tweets. The data was annotated using the CrowdFlower crowd-sourcing service, which has many advantages and some disadvantages.\
+\
+Note: We are releasing the training data in two formats:  integer sentiment scores on the 11 point scale  (-5 to +5, including 0), and continuous real-valued scores on the same scale.\
+\
+\
+\pard\pardeftab709\pardirnatural
+
+\b \cf0 Dataset:\
+\pard\pardeftab709\pardirnatural
+
+\b0 \cf0 \
+We have used the Twitter4j api to collect the dataset, which allows one to harvest a stream of real-time tweets by using queries to search over tweet content. In order to collate a suitable corpus for a figurative Sentiment Analysis task, we have prepared a set of search queries and a list of hashtags to retrieve the tweets. \
+The tweets were collected over a time period of 4 weeks from 1\super st\nosupersub  Jun, 2014 to 30\super th\nosupersub  Jun, 2014. Tweets contain information in different media such as images. To clean such information, a post-processing method is used which eliminates tweets containing URLs, images, emails etc. \
+\
+Very short tweets were eliminated using the following criteria: the minimum length of each tweet is 30 characters excluding Hashtags, and 40 characters including Hashtags. \
+\
+The final dataset consists of 8000 tweets collected from many different Twitter users. The dataset contains 5000 sarcastic tweets, 1000 ironical tweets and 2000 metaphorical tweets.\
+\
+\pard\pardeftab709\pardirnatural
+
+\b \cf0 Corpus Annotation using CrowdFlower:\
+\pard\pardeftab709\pardirnatural
+
+\b0 \cf0 \
+The 8000 tweets were annotated by using a crowd-sourcing web service, named CrowdFlower. The biggest problem with using such services is scammers -- users who do not properly engage with the task at hand. To prevent or thwart scammers, a initial gold standard corpus was prepared consisting of 1200 tweets, annotated by 7 researchers using an 11 points scale (-5 to +5 via 0). The sentiment of these tweets were determined on the basis of the intended meaning of their textual content, including their hashtags . This gold standard data was used to provide test questions in the CrowdFlower task so as to detect and disqualify scammers. Each tweet is annotated by 7 different users. Those scammers that are not eliminated will ultimately contribute to the weighted-mean sentiment rating of the tweets, but only in proportion to their perceived reliability on the gold-standard test questions. Thus, a scammer that eludes CrowdFlower's scammer-detection filter will only have a greatly diminished contribution to the weighted-mean sentiment of a tweet. Only the annotators that do well relative to the gold-standard questions can have a significant impact on the calculation of the weighted-mean sentiment rating of the 8000 tweets.\
+\
+\pard\pardeftab709\pardirnatural
+
+\b \cf0 Scammer detection:\
+\pard\pardeftab709\pardirnatural
+
+\b0 \cf0 \
+To detect the scammers who have bypassed the initial security detection process, the following post-processing is performed. Following the potential trends of scammers we found two types of scammers: \
+\
+1. Those who choose the same answer for each question \
+2. Those who choose a random answer for each question\
+\
+Type 1 scammers are easily detected and successfully discarded. To detect type 2 scammers, we estimated the reliability factor for each on the basis of their annotations of gold standard data (obtained from our trial data). A standard deviation is calculated for each gold standard tweet annotation. A reliability factor is calculated by taking the ratio of the number of annotations falling in the range of standard deviation and the number of annotations performed by the user. After checking the reliability factor manually, a threshold value was selected to eliminate remaining potential scammers. \
+\
+\pard\pardeftab709\pardirnatural
+
+\b \cf0 Data format:\
+\pard\pardeftab709\pardirnatural
+
+\b0 \cf0 \
+The data are stored in the following format: a spreadsheet with 2 fields \'96 tweeter id, and mean annotation of each tweet (from 7 annotators). For example:\
+\
+472120742755447000	-1	
+\i [I just love how my mom ALWAYS answers her phone. #not]
+\i0 \
+\
+As per Twitter policy, the actual text of the tweet is not included in each case. It is provided above for illustration purposes only. Download the script to access the text of each tweet on an id-by-id basis.\
+\
+\
+\pard\pardeftab709\pardirnatural
+
+\b \cf0 Dataset Analysis:\
+\pard\pardeftab709\pardirnatural
+
+\b0 \cf0 \
+Sentiment analysis of user generated data is quite challenging, even for human. Annotators with different background have annotated with different sentiment. We have calculated the standard deviation for the annotations offered by our CrowdFlower annotators.\
+\
+\
+\
+To calculate the weighted sentiment mean, the reliability factor of each user is used as the weight value.  The mean is calculated by using this formula:\
+\
+                 		
+\fs42 \uc0\u931  
+\fs38 R(Uj) * A(Uij)\
+	S(ti) =       -------------------------\
+				         
+\fs42 \uc0\u931 
+\fs38  R(Uj)	\
+\
+S(tj) =  Sentiment of the tweet\
+R(Uj) = Reliability of the user j \
+A(Uij) =  Annotation of user j for tweet i.\
+\
+\
+Most of the sarcastic, ironical and metaphorical data are mostly negative in nature. \
+\
+\
+}
