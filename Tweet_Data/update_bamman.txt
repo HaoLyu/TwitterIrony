@@ -1,0 +1,4 @@
+tweet_id  sarcasm  tweet_text  author_id
+1  1  so good  aa
+2  0  hash  bb
+3  0  thornes  cc
