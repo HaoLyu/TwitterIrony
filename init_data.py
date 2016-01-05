@@ -33,3 +33,5 @@ for i in range(len(mydict['tweet_id'])):
 				"tweet_text": mydict['tweet_text'][i]
 				}
 	tweets.insert_one(onetweet)
+
+f.close()

@@ -1,4 +1,4 @@
-# This file is used to generate all features of one author
+# This file is used to generate tweet features of one author
 # Run:
 # python tweet_features.py --account 0
 
@@ -16,6 +16,15 @@ from sklearn.feature_extraction.text import TfidfTransformer
 import LDA_topic as LDA
 import Tweet_Transfer_BOW as BOW
 import AllTweets as AllT
+from pymongo import MongoClient
+import re
+
+# Connect to MongoDB
+client = MongoClient('127.0.0.1', 27017)
+db = client['IronyHQ']
+dbtweets = db.tweets
+
+"""
 # Parse arguments
 parser = argparse.ArgumentParser(description='Tweepy Stream.')
 parser.add_argument('--account')
@@ -146,46 +155,103 @@ class User(object):
 # Class IronyTweet contains all the features of the inronic tweet
 class IronyTweet(object):
 
-	def __init__(self, userid, tweet):
-		self.userid = userid
-		self.tweet = tweet
+	def __init__(self, tweet):
+		self.tweet= tweet
 
 # Get the count of word unigrams and bigrams
-	def get_unigrams_bigrams_count(self):
+	def get_unigrams_count(self):
 		all_unigrams = BOW.Get_unigrams_bigrams(AllT.collect_text())[0]  
-		all_bigrams = BOW.Get_unigrams_bigrams(AllT.collect_text())[1]  
 
 		vect1 = CountVectorizer(vocabulary=all_unigrams)
-		unigrams = vect1.fit_transform(self.tweet).toarray()
+		unigrams = vect1.fit_transform([self.tweet]).toarray()
+
+		return unigrams
+
+	def get_bigrams_count(self):
+		all_bigrams = BOW.Get_unigrams_bigrams(AllT.collect_text())[1]  
 
 		vect2 = CountVectorizer(vocabulary=all_bigrams)
-		bigrams = vect2.fit_transform(self.tweet).toarray()
+		bigrams = vect2.fit_transform([self.tweet]).toarray()
 
-		return (unigrams, bigrams)
-
+		return bigrams
+"""
 # Get the binary indicatior for whether the tweet contains a word in intensifiers
-	def get_intensifiers(self):
-		inten_file = open('intensifiers.txt', 'r')
-		intensifier = 0
+def get_intensifiers(text):
+	inten_file = open('irony_package/intensifiers.txt', 'r')
+	intensifier = 0
 
-		for line in inten_file.readlines():
-			regex = r"\b" + re.escape(line) + r"\b"
+	for line in inten_file.readlines():
+		regex = r"\b" + re.escape(line) + r"\b"
 
-			if re.findall(regex, self.tweet, re.IGNORECASE):
-				intensifier = 1
-				break
-			else:
-				continue
-		
-		return intensifier
+		if re.findall(regex, text, re.IGNORECASE):
+			intensifier = 1
+			break
+		else:
+			continue
 	
+	return intensifier
+
+
+
+#--------
+# unigrams
+all_unigrams = BOW.Get_unigrams_bigrams(AllT.collect_text())[0]
+vect1 = CountVectorizer(vocabulary=all_unigrams)
+# bigrams
+all_bigrams = BOW.Get_unigrams_bigrams(AllT.collect_text())[1]  
+vect2 = CountVectorizer(vocabulary=all_bigrams)
+
+start_time = datetime.datetime.now()
+
+
+for i in range(dbtweets.find().count()):
+	cur_time = datetime.datetime.now()
+	delta = cur_time - start_time
+	print 'this is the ', i+1, 'tweet', 'total time is: ', delta
+
+	test_text = dbtweets.find()[i]['tweet_text']
+	test_author_name = dbtweets.find()[i]['author_full_name']
+
+	if dbtweets.find()[i].has_key('intensifier') == False:
+
+		unigrams = vect1.transform([test_text]).toarray()
+		bigrams = vect2.transform([test_text]).toarray()
+		intensifier = get_intensifiers(test_text)
+		print test_text
+		print test_author_name
+		print unigrams
+		print bigrams
+		print intensifier
+		result = dbtweets.update_one({"author_full_name": test_author_name},
+				{
+				    "$set": {
+		                "intensifier": intensifier,
+		                "word_unigrams": unigrams[0].tolist(),
+		                "word_bigrams": bigrams[0].tolist()
+		        	}
+				}
+			)
+
+	else:
+		continue
+
+
+
+
+
+
+
+
+# old one
+#-----------------------------
+
 # print test
 #newtweet = IronyTweet('_turgon', "In this country, \"democracy\" means pro-government. #irony")
 
 #print newtweet.get_unigrams_bigrams_count()[0]
 
-newuser = User('spykeezy')
-print newuser.get_profile
+#newuser = User('spykeezy')
+#print newuser.get_profile
 #print newuser.get_top_100_tfidf_terms()
 """
 print api.search_users('spykeezy')[0].location
