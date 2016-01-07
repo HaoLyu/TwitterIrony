@@ -19,12 +19,13 @@ with open('Tweet_Data/bamman.csv','r') as f:
 		mydict['author_id'].append(d)
 		mydict['tweet_text'].append(e)
 
+f.close()
 
 # Load the data into mongodb
 client = MongoClient('127.0.0.1', 27017)
 db = client['IronyHQ']
 tweets = db.tweets
-
+tweets.remove({})
 for i in range(len(mydict['tweet_id'])):
 	onetweet = {"tweet_id": mydict['tweet_id'][i], 
 				"sarcasm_score": mydict['sarcasm_score'][i],
@@ -34,4 +35,3 @@ for i in range(len(mydict['tweet_id'])):
 				}
 	tweets.insert_one(onetweet)
 
-f.close()

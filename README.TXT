@@ -1,9 +1,11 @@
 Twitter Irony Feature Model
 
-1. you need mongodb installed. Create new db 'IronyHQ' on the localhost and create a new collection 'tweets' in it. Then run: python init_data.py 
-Then you have 5 fields in your collection 'tweets' with keys: tweet_id, tweet_text, author_full_name, author_id, sarcasm_score  
-
-2. Run: python irony_package/tweet_features.py
-Then you have 3 fields in your collection 'tweets' with keys:intensifier, word_unigrams, word_bigrams. 
+1. you need MongoDB and Firefox Browser installed. In addition, you also need these Python packages installed:pymongo, bs4, selenium, sklearn, tweepy  
+2. Create new db 'IronyHQ' in the localhost and create a new collection 'tweets' in it. Then run: ./runme.sh 
+Then you have tweets documents in your collection 'tweets'.
+Now I've added these fields:
+tweet_id, tweet_text, author_full_name, author_id, sarcasm_score  
+tweets_count, following_count, followers_count, profile, duration
+intensifier, word_unigrams, word_bigrams. 
 
 
