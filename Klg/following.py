@@ -31,7 +31,7 @@ for i in range(dbtweets.find().count()):
 
 		if following_count:	
 			browser = webdriver.Firefox()
-			browser.get("https://twitter.com/DataScienceCtrl/following")
+			browser.get("https://twitter.com/%s/following"%(author_name))
 
 			time.sleep(1)
 			# Login to Twitter
@@ -56,10 +56,10 @@ for i in range(dbtweets.find().count()):
 
 			if len(post_elems) > 0:
 				for post in post_elems:
-					following_list.append(post.text)
-					print type(post.text)
-					#following_list.append(post.text.encode('ascii','ignore'))
-				print ' total %d' % (len(post_elems))
+					#following_list.append(post.text)
+					#print type(post.text)
+					following_list.append(post.text.encode('ascii','ignore'))
+				#print ' total %d' % (len(post_elems))
 			else:
 				following_list = "Not Available"
 
@@ -82,7 +82,7 @@ for i in range(dbtweets.find().count()):
 					}
 				)
 
-		print "No. %d following accounts, " %(i+1)
+		print "No. %d author %s following accounts, " (%(i+1), author_name)
 
 	except Exception:
 			continue
