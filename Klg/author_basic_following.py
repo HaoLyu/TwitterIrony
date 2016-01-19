@@ -59,7 +59,7 @@ for i in range(dbtweets.find().count()):
 		#print 'following count : %s'%(following_count)
 
 		
-		result = dbtweets.update_one({"author_full_name": test_author_name},
+		result = dbtweets.update_one({"tweet_id": sid},
 			{
 			    "$set": {
 	                "following_count": following_count

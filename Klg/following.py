@@ -1,3 +1,4 @@
+# It's slow but direct. Stimulate browser scroll with Selenium.
 # Extract all following names of an author 
 # run this after running author_basic.py
 from pymongo import MongoClient
@@ -22,6 +23,19 @@ client = MongoClient('127.0.0.1', 27017)
 db = client['IronyHQ']
 dbtweets = db.tweets
 
+
+browser = webdriver.Firefox()
+browser.get("https://twitter.com/irony_research/following")
+time.sleep(1)
+# Login to Twitter
+username = browser.find_element_by_xpath("//div[@class='clearfix field']/input[@class='js-username-field email-input js-initial-focus']")
+password = browser.find_element_by_class_name("js-password-field")
+username.send_keys("irony_research")
+password.send_keys("research_irony")
+login_attempt = browser.find_element_by_xpath("//div[@class='clearfix']/button[@class='submit btn primary-btn']")
+login_attempt.click()
+time.sleep(1)
+
 for i in range(dbtweets.find().count()):
 	try:
 		following_count = dbtweets.find()[i]['following_count']
@@ -30,18 +44,7 @@ for i in range(dbtweets.find().count()):
 		author_name = dbtweets.find()[i]['author_full_name']
 
 		if following_count:	
-			browser = webdriver.Firefox()
 			browser.get("https://twitter.com/%s/following"%(author_name))
-
-			time.sleep(1)
-			# Login to Twitter
-			username = browser.find_element_by_xpath("//div[@class='clearfix field']/input[@class='js-username-field email-input js-initial-focus']")
-			password = browser.find_element_by_class_name("js-password-field")
-			username.send_keys("irony_research")
-			password.send_keys("research_irony")
-			login_attempt = browser.find_element_by_xpath("//div[@class='clearfix']/button[@class='submit btn primary-btn']")
-			login_attempt.click()
-			time.sleep(1)
 			# Scroll down in the browser
 			elem = browser.find_element_by_tag_name("body")
 			no_of_pagedowns = select_pagedown(int(following_count))
@@ -70,8 +73,8 @@ for i in range(dbtweets.find().count()):
 			        	}
 					}
 				)
-
-			browser.close()
+			
+			#browser.close()
 
 		else:
 			result = dbtweets.update_one({"tweet_id": sid},
@@ -82,7 +85,7 @@ for i in range(dbtweets.find().count()):
 					}
 				)
 
-		print "No. %d author %s following accounts, " (%(i+1), author_name)
+		print "No. %d author %s has %d following accounts, " %((i+1), author_name, len(following_list))
 
 	except Exception:
 			continue
