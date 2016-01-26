@@ -17,7 +17,10 @@ import LDA_topic as LDA
 import Tweet_Transfer_BOW as BOW
 import AllTweets as AllT
 from pymongo import MongoClient
+from scipy import sparse
 import re
+import pickle
+
 
 # Connect to MongoDB
 client = MongoClient('127.0.0.1', 27017)
@@ -195,12 +198,13 @@ def get_intensifiers(text):
 
 #--------
 # unigrams
+# all_unigrams is the bag of word in unigrams
 all_unigrams = BOW.Get_unigrams_bigrams(AllT.collect_text())[0]
 vect1 = CountVectorizer(vocabulary=all_unigrams)
 # bigrams
+# all_bigrams is the bag of word in bigrams
 all_bigrams = BOW.Get_unigrams_bigrams(AllT.collect_text())[1]  
 vect2 = CountVectorizer(vocabulary=all_bigrams)
-
 start_time = datetime.datetime.now()
 
 
@@ -215,23 +219,29 @@ for i in range(dbtweets.find().count()):
 	if dbtweets.find()[i].has_key('intensifier') == False:
 
 		unigrams = vect1.transform([test_text]).toarray()
+		S_uni = sparse.csr_matrix(unigrams)
+		serialized_uni = pickle.dumps(S_uni, protocol=0)
 		bigrams = vect2.transform([test_text]).toarray()
+		S_bi = sparse.csr_matrix(bigrams)
+		serialized_bi = pickle.dumps(S_bi, protocol=0)
 		intensifier = get_intensifiers(test_text)
-		print test_text
-		print test_author_name
-		print unigrams
-		print bigrams
+		print "test_text: ",test_text
+		print "test_author_name",test_author_name
+		print "unigrams: ",unigrams
+		print "bigrams: ", bigrams
+		print "S_bi: ", serialized_bi
+		print "S_uni: ", serialized_uni
 		print intensifier
-		result = dbtweets.update_one({"author_full_name": test_author_name},
-				{
-				    "$set": {
-		                "intensifier": intensifier,
-		                "word_unigrams": unigrams[0].tolist(),
-		                "word_bigrams": bigrams[0].tolist()
-		        	}
-				}
-			)
-
+		#result = dbtweets.update_one({"author_full_name": test_author_name},
+		#		{
+		#		    "$set": {
+		#                "intensifier": intensifier,
+		#                "word_unigrams": unigrams[0].tolist(),
+		#                "word_bigrams": bigrams[0].tolist()
+		#        	}
+		#		}
+		#	)
+		break
 	else:
 		continue
 
