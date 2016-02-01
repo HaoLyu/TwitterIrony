@@ -19,16 +19,14 @@ for i in range(dbtweets.find({'following_list' : {'$exists': False}}).count()):
 	count.put(i)
 
 queue = Queue()
-total_number = dbtweets.find({'following_list' : {'$exists': False}}).count()
-
-#for i in range(dbtweets.find({'following_list' : {'$exists': False}}).count()):
+sum_tweets =  dbtweets.find({'$and':[{'following_list' : {'$exists': False}},{'following_count' : {'$exists': True}}]})
+print sum_tweets.count()
 for i in range(5000):
 	try:
-		one_doc = [dbtweets.find({'following_list' : {'$exists': False}})[i]['tweet_id'],
-					dbtweets.find({'following_list' : {'$exists': False}})[i]['following_count'], 
-					dbtweets.find({'following_list' : {'$exists': False}})[i]['author_full_name']
+		one_doc = [sum_tweets[i]['tweet_id'],
+					sum_tweets[i]['following_count'], 
+					sum_tweets[i]['author_full_name']
 					]
-		#print "this is No.%d" %i + " Doc: ", one_doc
 		queue.put_nowait(one_doc)
 		
 	except Exception:
@@ -92,12 +90,12 @@ headers = [{
 # set start time
 start_time = datetime.datetime.now()
 
- 
+name_dict = {}
 test_count = 0
 
 def foo(key):
-	#print '***************'
 	global test_count
+	global name_dict
 	#print 'test_count %d' % test_count
 
 	client_no = test_count%3
@@ -105,8 +103,19 @@ def foo(key):
 	user_screen_name = key[2]
 	f_count = key[1]
 	f_list = []
+	print 'no.%d is %s'%(test_count,user_screen_name)
 	#print "user is", user_screen_name, 'has so many following', f_count
-	
+	if user_screen_name in name_dict:
+		exist_list = dbtweets.find({'tweet_id' : name_dict[user_screen_name]})["following_list"]
+		result = dbtweets.update_one({"tweet_id": tweet_id},
+			{
+			    "$set": {
+	                "following_list": exist_list
+	        	}
+			}
+		)
+		return
+
 	if f_count > 0:
 		try:
 			get_url = "https://twitter.com/" + user_screen_name + "/following"
@@ -122,6 +131,7 @@ def foo(key):
 			for one in first_jstt:
 				insert = (one.text).strip().replace('@','')
 				f_list.append(insert)
+
 			try: 
 				#print "No %d user %s is under inputing %s :" %(test_count+1, user_screen_name, str(f_count))
 
@@ -151,9 +161,10 @@ def foo(key):
 						}
 					)	
 
+				name_dict[user_screen_name] = tweet_id
 			
 		
-			except Exception, e:
+			except KeyError, e:
 				print 'error %s' %e
 				return
 			test_count += 1
@@ -163,14 +174,11 @@ def foo(key):
 
 	else: 
 		return
-	#print f_list
-	pass
 
 def many_foos():
-	
 	while(not(queue.empty())):
 		foo(queue.get_nowait())
-
+	
 
 process_num = 4
 

@@ -92,14 +92,32 @@ for i in range(dbtweets.find().count()):
 			duration = (current_time - join_time_convert).days
 			#print 'duration: %s'%(duration)
 			
-			result = dbtweets.update_one({"author_full_name": test_author_name},
+			jstt = soup.find("h1", {"class": "ProfileHeaderCard-name"}).find("span", {"class": "ProfileHeaderCard-badges ProfileHeaderCard-badges--1"})
+			verified = str(jstt)
+			if verified is not None:
+				verified = 'yes'
+			else:
+				verified = 'no'
+			#print 'verified: %s'%verified
+
+			avg = tweets_count/float(duration)
+			# print "avg tweet number is: %f"%avg
+
+			jstt = soup.find("div", {"class": "ProfileHeaderCard-location"}).find("span", {"class": "ProfileHeaderCard-locationText u-dir"})
+			time_zone = time_zone_check(str(jstt.text).strip()).strip()
+			#print time_zone
+
+			result = dbtweets.update_one({"tweet_id": sid},
 				{
 				    "$set": {
 		                "tweets_count": tweets_count,
 		                "following_count": following_count,
 		                "followers_count": followers_count,
 		                "profile": profile,
-		                "duration": duration
+		                "duration": duration,
+		                "verified": verified,
+		                "avg_tweet": avg,
+		                "time_zone": time_zone
 		        	}
 				}
 			)

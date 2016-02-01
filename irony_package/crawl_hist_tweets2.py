@@ -8,6 +8,7 @@ from pymongo import MongoClient
 import datetime
 from multiprocessing import Process, Queue
 from multiprocessing import Pool
+import random
 
 # Load the data into mongodb
 client = MongoClient('127.0.0.1', 27017)
@@ -28,7 +29,9 @@ for i in range(dbtweets.find({'hist_list' : {'$exists': False}}).count()):
 					]
 		#print "this is No.%d" %i + " Doc: ", one_doc
 		queue.put_nowait(one_doc)
-		break
+		print one_doc
+		if (i>4):
+			break
 	except Exception:
 		continue
 
@@ -52,11 +55,12 @@ payload = { 'session[username_or_email]': 'irony_research',
 r = requests.post(url, data=payload)
 
 proxies = {
+	
 	"http": "http://96.5.28.23:8008",
-	"https": "https://45.32.43.100:3128",
-	"https": "https://137.135.166.225:8120",
-	"http": "http://134.249.168.16:80", 
-	"http": "http://108.165.33.7:3128"
+	"http": "http://107.151.152.210:80", 
+	"http": "http://107.151.142.123:80",
+	"http": "http://23.253.208.241:80",
+	"http": "http://107.151.142.125:80"
 	
 }
 
@@ -99,7 +103,7 @@ def foo(key):
 	global test_count
 	#print 'test_count %d' % test_count
 
-	client_no = test_count%3
+	client_no = random.randint(0,2)
 	tweet_id = key[0]
 	user_screen_name = key[1]
 	hist_list = []
@@ -116,8 +120,12 @@ def foo(key):
 		#print jstt['data-min-position']
 
 		start_position = str(jstt['data-min-position'])
-		print start_position
+		#print start_position
 		#print "No %d user %s is under inputing %s :" %(test_count+1, user_screen_name, str(f_count))
+		new_jstt = soup.find("div", {"id": "timeline"}).find_all("p")
+		for one in new_jstt:
+			hist_list.append(one.text)
+
 
 		while(start_position != None):
 			one_url = 'https://twitter.com/i/profiles/show/' + user_screen_name + '/timeline?include_available_features=1&include_entities=1&last_note_ts=123&max_position=' + start_position + '&reset_error_state=false'
@@ -130,16 +138,19 @@ def foo(key):
 					}
 
 			response = requests.get(one_url, params=params, headers=headers[client_no], proxies=proxies)
-
+			#xxxx =  response.json()
+			#print xxxx.keys()
 			fixtures = (response.json())['inner']
 			start_position = fixtures['min_position']
-			latent_count = fixtures['new_latent_count']
-			lc += int(latent_count)
-			print 'lc is:', lc
-			print start_position
+			#latent_count = fixtures['new_latent_count']
+			#lc += int(latent_count)
+			#print 'lc is:', lc
+			#print start_position
+			#print fixtures['items_html']
 			soup2 = BeautifulSoup(fixtures['items_html'], "lxml")
-			jstt2 = soup2.find_all("div", {"lang": "en"})
+			jstt2 = soup2.find_all("p", {"lang": "en"})
 			for one_fol in jstt2:
+				#print one_fol.text
 				hist_list.append(one_fol.text)
 
 			if len(hist_list)>999:
@@ -147,18 +158,19 @@ def foo(key):
 				
 		test_count += 1
 		print "No %d user %s inputed:" %(count.get_nowait(), user_screen_name)
-				
-		result = dbtweets.update_one({"tweet_id": tweet_id},
-					{
-					    "$set": {
-			                "following_list": f_list
-			        	}
-					}
-				)
+		print "hist_list is :", hist_list		
+		#result = dbtweets.update_one({"tweet_id": tweet_id},
+		#			{
+		#			    "$set": {
+		#	                "following_list": hist_list
+		#	        	}
+		#			}
+		#		)
 	
 	
 		
-	except KeyError:
+	except Exception,e:
+		print 'reason',e
 		return
 	
 	return
@@ -166,13 +178,16 @@ def foo(key):
 
 
 def many_foos():
+	while(not(queue.empty())):
+		foo(queue.get_nowait())
+	"""
 	try:
 		while(not(queue.empty())):
 			foo(queue.get_nowait())
 	except Exception, e:
 		print "exception %s", e
-		break
-
+		sys.exit(e)
+	"""
 process_num = 4
 
 p = Pool(process_num)

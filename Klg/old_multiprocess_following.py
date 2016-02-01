@@ -22,7 +22,7 @@ queue = Queue()
 total_number = dbtweets.find({'following_list' : {'$exists': False}}).count()
 
 #for i in range(dbtweets.find({'following_list' : {'$exists': False}}).count()):
-for i in range(5000):
+for i in range(1000):
 	try:
 		one_doc = [dbtweets.find({'following_list' : {'$exists': False}})[i]['tweet_id'],
 					dbtweets.find({'following_list' : {'$exists': False}})[i]['following_count'], 
@@ -96,7 +96,7 @@ start_time = datetime.datetime.now()
 test_count = 0
 
 def foo(key):
-	#print '***************'
+	print '***************'
 	global test_count
 	#print 'test_count %d' % test_count
 
@@ -167,10 +167,11 @@ def foo(key):
 	pass
 
 def many_foos():
-	
-	while(not(queue.empty())):
-		foo(queue.get_nowait())
-
+	try:
+		while(not(queue.empty())):
+			foo(queue.get_nowait())
+	except Exception, e:
+		print "exception %s", e
 
 process_num = 4
 
