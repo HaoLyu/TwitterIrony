@@ -14,19 +14,24 @@ client = MongoClient('127.0.0.1', 27017)
 db = client['IronyHQ']
 dbtweets = db.tweets
 
+qury = dbtweets.find({'$and': [{'following_list' : {'$exists': False}}, {'following_count' : {'$exists': True}}]})
+print "total left is %d"%(qury.count())
 count = Queue()
-for i in range(dbtweets.find({'following_list' : {'$exists': False}}).count()):
+for i in range(qury.count()):
 	count.put(i)
 
 queue = Queue()
-total_number = dbtweets.find({'following_list' : {'$exists': False}}).count()
 
 #for i in range(dbtweets.find({'following_list' : {'$exists': False}}).count()):
-for i in range(5000):
+for i in range(200):
 	try:
-		one_doc = [dbtweets.find({'following_list' : {'$exists': False}})[i]['tweet_id'],
-					dbtweets.find({'following_list' : {'$exists': False}})[i]['following_count'], 
-					dbtweets.find({'following_list' : {'$exists': False}})[i]['author_full_name']
+		#one_doc = [dbtweets.find({'following_list' : {'$exists': False}})[i]['tweet_id'],
+		#			dbtweets.find({'following_list' : {'$exists': False}})[i]['following_count'], 
+		#			dbtweets.find({'following_list' : {'$exists': False}})[i]['author_full_name']
+		#			]
+		one_doc = [qury[i]['tweet_id'],
+					qury[i]['following_count'], 
+					qury[i]['author_full_name']
 					]
 		#print "this is No.%d" %i + " Doc: ", one_doc
 		queue.put_nowait(one_doc)

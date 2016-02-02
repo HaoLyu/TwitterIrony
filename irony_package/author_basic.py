@@ -43,6 +43,13 @@ def date_convert(s):
 
 	return date
 
+def time_zone_check(s):
+	try:
+		g = geocoders.GoogleV3()
+		place, (lat, lng) = g.geocode(s)
+		return place.split(',')[-1].encode('utf-8')
+	except:
+		return ''
 # Load the data into mongodb
 client = MongoClient('127.0.0.1', 27017)
 db = client['IronyHQ']
