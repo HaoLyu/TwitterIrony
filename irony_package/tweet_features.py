@@ -1,14 +1,15 @@
 # This file is used to generate tweet features of one author
-# Run:
-# python tweet_features.py --account 0
+# Features included: intensifier, unigram, bigram, pronunciation features
 
-# import modules
 import sys
+sys.path.append('Pronunciation_feature')
+import Pronunciation_feature as Pron
 import tweepy
 import json
 import argparse
 import operator
 import datetime
+from bson.binary import Binary
 import re
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -212,32 +213,36 @@ for i in range(dbtweets.find().count()):
 	cur_time = datetime.datetime.now()
 	delta = cur_time - start_time
 	print 'this is the ', i+1, 'tweet', 'total time is: ', delta
-
-	test_text = dbtweets.find()[i]['tweet_text']
-	test_author_name = dbtweets.find()[i]['author_full_name']
+	tweet_id = dbtweets.find()[i]['tweet_id']
+	tweet_text = dbtweets.find()[i]['tweet_text']
 
 	if dbtweets.find()[i].has_key('intensifier') == False:
-
-		unigrams = vect1.transform([test_text]).toarray()
+		number_no_vowels = Pron.count_number_no_vowels(tweet_text)
+		number_Polysyllables = Pron.count_number_Polysyllables(tweet_text)
+		unigrams = vect1.transform([tweet_text]).toarray()
 		S_uni = sparse.csr_matrix(unigrams)
-		serialized_uni = pickle.dumps(S_uni, protocol=0)
-		bigrams = vect2.transform([test_text]).toarray()
+		serialized_uni = Binary(pickle.dumps(S_uni, protocol=0))
+		bigrams = vect2.transform([tweet_text]).toarray()
 		S_bi = sparse.csr_matrix(bigrams)
-		serialized_bi = pickle.dumps(S_bi, protocol=0)
-		intensifier = get_intensifiers(test_text)
-		print "test_text: ",test_text
+		serialized_bi = Binary(pickle.dumps(S_bi, protocol=0))
+		intensifier = get_intensifiers(tweet_text)
+		print "tweet_text: ",tweet_text
 		print "test_author_name",test_author_name
 		print "unigrams: ",unigrams
 		print "bigrams: ", bigrams
 		print "S_bi: ", serialized_bi
 		print "S_uni: ", serialized_uni
 		print intensifier
-		#result = dbtweets.update_one({"author_full_name": test_author_name},
+		print "number_no_vowels",number_no_vowels
+		print "number_Polysyllables", number_Polysyllables 
+		#result = dbtweets.update_one({"tweet_id": tweet_id},
 		#		{
 		#		    "$set": {
 		#                "intensifier": intensifier,
-		#                "word_unigrams": unigrams[0].tolist(),
-		#                "word_bigrams": bigrams[0].tolist()
+		#                "word_unigrams": serialized_uni,
+		#                "word_bigrams": serialized_bi,
+		#				 "number_Polysyllables ": number_Polysyllables,
+		#				 "number_no_vowels": number_no_vowels
 		#        	}
 		#		}
 		#	)
