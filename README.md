@@ -12,8 +12,11 @@ Then you have tweets documents in your collection 'tweets'.
 ###Now I've added these fields:
 
 -tweet_id, tweet_text, author_full_name, author_id, sarcasm_score  
+
 -tweets_count, following_count, followers_count, profile, duration,verified, avg_tweet, timezone
--intensifier, word_unigrams, word_bigrams.number_Polysyllables, number_no_vowels, Tweet_whole_sentiment, Tweet_word_sentiment, 
+
+-intensifier, word_unigrams, word_bigrams.number_Polysyllables, number_no_vowels, Tweet_whole_sentiment, Tweet_word_sentiment
+
 -Part of speech features, Capitalization features
 
 
