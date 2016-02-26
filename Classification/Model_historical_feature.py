@@ -10,6 +10,7 @@ from sklearn import linear_model
 from sklearn.cross_validation import KFold
 from scipy.sparse import csr_matrix
 from sklearn.metrics import roc_auc_score
+from sklearn import grid_search
 
 # Generate the top 100 tfidf terms
 def Author_historical_salient_terms():
@@ -21,8 +22,10 @@ def Author_historical_salient_terms():
 	tfidf_dict = {}
 	fit_tfidf_list = []
 	target_list = []
+	name_dict = {}
 	for i in range(dbtweets.find({'hist_list':{'$exists':True}}).count()): 
 		try:
+			author_full_name = (dbtweets.find({'hist_list':{'$exists':True}})[i]['author_full_name']).encode('utf-8')
 			tweetList = dbtweets.find({'hist_list':{'$exists':True}})[i]['hist_list']
 			sarcasm_score = dbtweets.find({'hist_list':{'$exists':True}})[i]['sarcasm_score']
 			top_tfidf_list = []
@@ -45,8 +48,13 @@ def Author_historical_salient_terms():
 					tfidf_dict[term] = 1
 				else:
 					continue
-			fit_tfidf_list.append(top_tfidf_list)
-			target_list.append(sarcasm_score)
+			input_data = " ".join(top_tfidf_list)
+			fit_tfidf_list.append(input_data)
+			target_list.append(int(sarcasm_score.encode('utf-8')))
+			if author_full_name in name_dict:
+				name_dict[author_full_name].append(len(fit_tfidf_list)-1)
+			else:
+				name_dict[author_full_name] = [len(fit_tfidf_list)-1]
 
 		except ValueError:
 			continue
@@ -56,22 +64,34 @@ def Author_historical_salient_terms():
 	X = csr_matrix(X).toarray()
 	Y_target = np.array(target_list)
 	print X.shape, Y_target.shape
-
-	total_set_length = X.shape[0]
+	name_list = name_dict.keys()
+	total_set_length = len(name_list)
 	kf = KFold(total_set_length, n_folds=10)
 	avg_score = []
 	avg_auc_score = []
 	for train_index, test_index in kf:
+		temp_index = []
+		for i in train_index:
+			temp_index += name_dict[name_list[i]]
+		train_index = np.array(temp_index)
+
+		temp_index = []
+		for i in test_index:
+			temp_index += name_dict[name_list[i]]
+		test_index = np.array(temp_index)
+
 		X_train, X_test = X[train_index], X[test_index]
 		Y_train, Y_test = Y_target[train_index], Y_target[test_index]
-		clf = linear_model.LogisticRegression(penalty='l2')
+		parameters = {'tol':[0.01,0.02,0.03,0.04,0.05], 'C':[1, 10]}
+		lr = linear_model.LogisticRegression(penalty='l2')
+		clf = grid_search.GridSearchCV(lr, parameters, cv=5)
 		clf.fit(X_train, Y_train)
+		y_true, y_pred = Y_test, clf.predict(X_test)
 		score = clf.score(X_test, Y_test)
-		pre = clf.predict(X_test)
 		avg_score.append(score)
-		auc = roc_auc_score(Y_test, pre)
+		auc = roc_auc_score(y_true, y_pred)
 		avg_auc_score.append(auc)
-		
+
 	accuracy = reduce(lambda x, y: x + y, avg_score) / len(avg_score)
 	auc_score = reduce(lambda x, y: x + y, avg_auc_score) / len(avg_auc_score)
 	print 'accuracy is: %s, auc score is:%s'%(accuracy, auc_score)
