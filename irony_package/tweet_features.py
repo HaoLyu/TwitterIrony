@@ -28,29 +28,6 @@ db = client['IronyHQ']
 dbtweets = db.tweets
 
 """
-# Parse arguments
-parser = argparse.ArgumentParser(description='Tweepy Stream.')
-parser.add_argument('--account')
-opts = parser.parse_args()
-
-use_account = str(opts.account)
-# Load account info from file
-
-account_file = open('../Credentials/twitter_accounts.json', 'r')
-all_accounts = json.load(account_file)
-account = all_accounts[use_account]
-account_file.close()
-
-
-consumer_key = account['consumer_key']
-consumer_secret = account['consumer_secret']
-access_key = account['access_key']
-access_secret = account['access_secret']
-
-# Authentication, API
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_key, access_secret)
-api = tweepy.API(auth)
 
 # Class User contains all the profile features of the user
 class User(object):
@@ -88,28 +65,6 @@ class User(object):
 		return(UserTopicPro.get_topics_proportions())
 
 
-# Class IronyTweet contains all the features of the inronic tweet
-class IronyTweet(object):
-
-	def __init__(self, tweet):
-		self.tweet= tweet
-
-# Get the count of word unigrams and bigrams
-	def get_unigrams_count(self):
-		all_unigrams = BOW.Get_unigrams_bigrams(AllT.collect_text())[0]  
-
-		vect1 = CountVectorizer(vocabulary=all_unigrams)
-		unigrams = vect1.fit_transform([self.tweet]).toarray()
-
-		return unigrams
-
-	def get_bigrams_count(self):
-		all_bigrams = BOW.Get_unigrams_bigrams(AllT.collect_text())[1]  
-
-		vect2 = CountVectorizer(vocabulary=all_bigrams)
-		bigrams = vect2.fit_transform([self.tweet]).toarray()
-
-		return bigrams
 """
 # Get the binary indicatior for whether the tweet contains a word in intensifiers
 def get_intensifiers(text):
@@ -148,38 +103,35 @@ for i in range(dbtweets.find().count()):
 	tweet_id = dbtweets.find()[i]['tweet_id']
 	tweet_text = dbtweets.find()[i]['tweet_text']
 
-	if dbtweets.find()[i].has_key('intensifier') == False:
-		number_no_vowels = Pron.count_number_no_vowels(tweet_text)
-		number_Polysyllables = Pron.count_number_Polysyllables(tweet_text)
-		unigrams = vect1.transform([tweet_text]).toarray()
-		S_uni = sparse.csr_matrix(unigrams)
-		serialized_uni = pickle.dumps(S_uni, protocol=0)
-		bigrams = vect2.transform([tweet_text]).toarray()
-		S_bi = sparse.csr_matrix(bigrams)
-		serialized_bi = pickle.dumps(S_bi, protocol=0)
-		intensifier = get_intensifiers(tweet_text)
-		#print "tweet_text: ",tweet_text
-		#print "test_author_name",test_author_name
-		#print "unigrams: ",unigrams
-		#print "bigrams: ", bigrams
-		#print "S_bi: ", serialized_bi
-		#print "S_uni: ", serialized_uni
-		#print intensifier
-		#print "number_no_vowels",number_no_vowels
-		#print "number_Polysyllables", number_Polysyllables 
-		result = dbtweets.update_one({"tweet_id": tweet_id},
-				{
-				    "$set": {
-		                "intensifier": intensifier,
-		                "word_unigrams": serialized_uni,
-		                "word_bigrams": serialized_bi,
-						 "number_Polysyllables ": number_Polysyllables,
-						 "number_no_vowels": number_no_vowels
-		        	}
-				}
-			)
+	
+	number_no_vowels = Pron.count_number_no_vowels(tweet_text)
+	number_Polysyllables = Pron.count_number_Polysyllables(tweet_text)
+	unigrams = vect1.transform([tweet_text]).toarray()
+	for uu in xrange(unigrams[0].shape[0]):
+		if unigrams[0][uu]>1:
+			unigrams[0][uu] = 1
+	S_uni = sparse.csr_matrix(unigrams)
+	serialized_uni = pickle.dumps(S_uni, protocol=0)
+	bigrams = vect2.transform([tweet_text]).toarray()
+	for bb in xrange(bigrams[0].shape[0]):
+		if bigrams[0][bb]>1:
+			bigrams[0][bb] = 1
+	S_bi = sparse.csr_matrix(bigrams)
+	serialized_bi = pickle.dumps(S_bi, protocol=0)
+	intensifier = get_intensifiers(tweet_text)
+
+	result = dbtweets.update_one({"tweet_id": tweet_id},
+			{
+			    "$set": {
+	                "intensifier": intensifier,
+	                "word_unigrams": serialized_uni,
+	                "word_bigrams": serialized_bi,
+					 "number_Polysyllables ": number_Polysyllables,
+					 "number_no_vowels": number_no_vowels
+	        	}
+			}
+		)
 		
-	else:
-		continue
+	
 
 

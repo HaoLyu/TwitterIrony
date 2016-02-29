@@ -75,7 +75,7 @@ def Author_historical_salient_terms():
 
 # Generate the perdicting accuracy using only historical sentiment
 def Author_historical_sentiment():
-# Connect to MongoDB
+	# Connect to MongoDB
 	client = MongoClient('127.0.0.1', 27017)
 	db = client['IronyHQ']
 	dbtweets = db.tweets
@@ -116,7 +116,7 @@ def Author_historical_sentiment():
 
 # Generate the perdicting accuracy using only bag of words
 def word_unigrams_bigrams():
-# Connect to MongoDB
+	# Connect to MongoDB
 	client = MongoClient('127.0.0.1', 27017)
 	db = client['IronyHQ']
 	dbtweets = db.tweets
@@ -161,6 +161,233 @@ def word_unigrams_bigrams():
 	result = LR_model(name_dict, bigrams_list, Y_target)
 	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
 
+# Generate the perdicting accuracy using only intensifier
+def intensifier():
+	# Connect to MongoDB
+	client = MongoClient('127.0.0.1', 27017)
+	db = client['IronyHQ']
+	dbtweets = db.tweets
+
+	intensifier_list = []
+	target_list = []
+	name_dict = {}
+	for i in xrange(dbtweets.find({'intensifier':{'$exists':True}}).count()): 
+	#for i in xrange(1000):
+		try:
+			document = dbtweets.find({'intensifier':{'$exists':True}})[i]
+			intensifier = document['intensifier']
+			intensifier_list.append(intensifier)
+			sarcasm_score = document['sarcasm_score']
+			target_list.append(int(sarcasm_score.encode('utf-8')))
+			author_full_name = document['author_full_name'].encode('utf-8')
+			if author_full_name in name_dict:
+				name_dict[author_full_name].append(len(intensifier_list)-1)
+			else:
+				name_dict[author_full_name] = [len(intensifier_list)-1]
+
+		except ValueError:
+			continue
+	
+	client.close()
+	X = np.array(intensifier_list)
+	Y_target = np.array(target_list)
+	del target_list, intensifier_list
+	result = LR_model(name_dict, X, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+
+# Generate the perdicting accuracy using only Part_of_speech feature
+def Part_of_speech():
+	# Connect to MongoDB
+	client = MongoClient('127.0.0.1', 27017)
+	db = client['IronyHQ']
+	dbtweets = db.tweets
+	TagList = ['N','O','S','^','Z','L','M','V','A','R',
+	   			'!','D','P','&','T','X','Y','#','@','~',
+				'U','E','$',',','G']
+	Part_of_speech_list = []
+	target_list = []
+	name_dict = {}
+	for i in xrange(dbtweets.find({'lexical_density':{'$exists':True}}).count()): 
+	#for i in xrange(1000):
+		try:
+			row_feature = []
+			document = dbtweets.find({'lexical_density':{'$exists':True}})[i]
+			for a in TagList:			
+				a_ratio = a+'_ratio'
+				a_value = document[a]
+				a_ratio_value = document[a_ratio]
+				row_feature.append(a_value)
+				row_feature.append(a_ratio_value)
+			row_feature.append(document['lexical_density'])
+			Part_of_speech_list.append(row_feature)
+
+			sarcasm_score = document['sarcasm_score']
+			target_list.append(int(sarcasm_score.encode('utf-8')))
+			author_full_name = document['author_full_name'].encode('utf-8')
+			if author_full_name in name_dict:
+				name_dict[author_full_name].append(len(Part_of_speech_list)-1)
+			else:
+				name_dict[author_full_name] = [len(Part_of_speech_list)-1]
+
+		except ValueError:
+			continue
+	
+	client.close()
+	X = np.array(Part_of_speech_list)
+	Y_target = np.array(target_list)
+	del target_list, Part_of_speech_list
+	result = LR_model(name_dict, X, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+
+# Generate the perdicting accuracy using only Capitalization feature
+def Capitalization():
+	# Connect to MongoDB
+	client = MongoClient('127.0.0.1', 27017)
+	db = client['IronyHQ']
+	dbtweets = db.tweets
+	TagList = ['N','O','S','^','Z','L','M','V','A','R',
+	   			'!','D','P','&','T','X','Y','#','@','~',
+				'U','E','$',',','G']
+	Cap_list = []
+	target_list = []
+	name_dict = {}
+	for i in xrange(dbtweets.find({'ini_cap_number':{'$exists':True}}).count()): 
+	#for i in xrange(1000):
+		try:
+			row_feature = []
+			document = dbtweets.find({'lexical_density':{'$exists':True}})[i]
+			for a in TagList:			
+				a_cap_count = a+'_cap_count'
+				a_value = document[a_cap_count]
+				row_feature.append(a_value)
+
+			row_feature.append(document['ini_cap_number'])
+			row_feature.append(document['all_cap_number'])
+
+			Cap_list.append(row_feature)
+
+			sarcasm_score = document['sarcasm_score']
+			target_list.append(int(sarcasm_score.encode('utf-8')))
+			author_full_name = document['author_full_name'].encode('utf-8')
+			if author_full_name in name_dict:
+				name_dict[author_full_name].append(len(Cap_list)-1)
+			else:
+				name_dict[author_full_name] = [len(Cap_list)-1]
+
+		except ValueError:
+			continue
+	
+	client.close()
+	X = np.array(Cap_list)
+	Y_target = np.array(target_list)
+	del target_list, Cap_list
+	result = LR_model(name_dict, X, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+
+# Generate the perdicting accuracy using only Pronunciation feature
+def Pronunciation():
+	# Connect to MongoDB
+	client = MongoClient('127.0.0.1', 27017)
+	db = client['IronyHQ']
+	dbtweets = db.tweets
+
+	Pronunciation_list = []
+	target_list = []
+	name_dict = {}
+	for i in xrange(dbtweets.find({'number_no_vowels':{'$exists':True}}).count()): 
+		try:
+			document = dbtweets.find({'intensifier':{'$exists':True}})[i]
+			author_full_name = document['author_full_name'].encode('utf-8')
+			Pronunciation_list.append([document["number_Polysyllables "],document["number_no_vowels"]])
+			sarcasm_score = document['sarcasm_score']
+			target_list.append(int(sarcasm_score.encode('utf-8')))
+
+			if author_full_name in name_dict:
+				name_dict[author_full_name].append(len(Pronunciation_list)-1)
+			else:
+				name_dict[author_full_name] = [len(Pronunciation_list)-1]
+
+		except ValueError:
+			continue
+	
+	client.close()
+	X = np.array(Pronunciation_list)
+	Y_target = np.array(target_list)
+	del target_list, Pronunciation_list
+	result = LR_model(name_dict, X, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+
+# Generate the perdicting accuracy using only Tweet whole sentiment
+def Tweet_whole_sentiment():
+	# Connect to MongoDB
+	client = MongoClient('127.0.0.1', 27017)
+	db = client['IronyHQ']
+	dbtweets = db.tweets
+	senti_dict ={key:value for key, value in zip(["very negative", "negative", "neutral", "positive", "very positive"], range())}
+	original_whole_sentiment = [0, 0, 0, 0, 0]
+	Tweet_whole_sentiment_list = []
+	target_list = []
+	name_dict = {}
+	for i in xrange(dbtweets.find({'tweet_whole_sentimentpredict':{'$exists':True}}).count()): 
+		try:
+			document = dbtweets.find({'tweet_whole_sentimentpredict':{'$exists':True}})[i]
+			author_full_name = document['author_full_name'].encode('utf-8')
+			Tweet_whole_sentiment_list.append([float(document["positivenode"]),float(document["negativenode"])])
+			whole_sentiment = document['tweet_whole_sentimentpredict']
+			original_whole_sentiment[senti_dict[whole_sentiment]] = 1
+			Tweet_whole_sentiment_list.append(original_whole_sentiment)
+			sarcasm_score = document['sarcasm_score']
+			target_list.append(int(sarcasm_score.encode('utf-8')))
+
+			if author_full_name in name_dict:
+				name_dict[author_full_name].append(len(Tweet_whole_sentiment_list)-1)
+			else:
+				name_dict[author_full_name] = [len(Tweet_whole_sentiment_list)-1]
+
+		except ValueError:
+			continue
+	
+	client.close()
+	X = np.array(Tweet_whole_sentiment_list)
+	Y_target = np.array(target_list)
+	del target_list, Tweet_whole_sentiment_list
+	result = LR_model(name_dict, X, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+
+# Generate the perdicting accuracy using only Tweet word sentiment
+def Tweet_word_sentiment():
+	# Connect to MongoDB
+	client = MongoClient('127.0.0.1', 27017)
+	db = client['IronyHQ']
+	dbtweets = db.tweets
+
+	Tweet_word_sentiment_list = []
+	target_list = []
+	name_dict = {}
+	for i in xrange(dbtweets.find({'effect_distance':{'$exists':True}}).count()): 
+		try:
+			document = dbtweets.find({'effect_distance':{'$exists':True}})[i]
+			author_full_name = document['author_full_name'].encode('utf-8')
+			Tweet_word_sentiment_list.append([document["effect_distance"],document["min_word_effect"],document["max_word_effect"],document["sentiment_distance"],document["min_word_senti"],document["max_word_senti"]])
+			sarcasm_score = document['sarcasm_score']
+			target_list.append(int(sarcasm_score.encode('utf-8')))
+
+			if author_full_name in name_dict:
+				name_dict[author_full_name].append(len(Tweet_word_sentiment_list)-1)
+			else:
+				name_dict[author_full_name] = [len(Tweet_word_sentiment_list)-1]
+
+		except ValueError:
+			continue
+	
+	client.close()
+	X = np.array(Tweet_word_sentiment_list)
+	Y_target = np.array(target_list)
+	del target_list, Tweet_word_sentiment_list
+	result = LR_model(name_dict, X, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+
+
 # Logistic Regression Model with 10 layer Cross Validation. 
 # trainning set(8/10), parameter development set(1/10), test set(1/10).
 def LR_model(name_dict, X, Y):
@@ -198,10 +425,10 @@ def LR_model(name_dict, X, Y):
 		y_true, y_pred = Y_test, tuned_clf.predict(X_test)
 		score = tuned_clf.score(X_test, Y_test)
 		del tuned_clf
-		print 'score is ',score
+		#print 'score is ',score
 		avg_score.append(score)
 		auc = roc_auc_score(y_true, y_pred)
-		print 'auc is', auc 
+		#print 'auc is', auc 
 		avg_auc_score.append(auc)
 
 	accuracy = reduce(lambda x, y: x + y, avg_score) / len(avg_score)
@@ -218,6 +445,18 @@ if __name__ == '__main__':
 			Author_historical_sentiment()
 		elif sys.argv[1] == 'word_unigrams_bigrams':
 			word_unigrams_bigrams()
+		elif sys.argv[1] == 'intensifier':
+			intensifier()
+		elif sys.argv[1] == 'Part_of_speech':
+			Part_of_speech()
+		elif sys.argv[1] == 'Capitalization':
+			Capitalization()
+		elif sys.argv[1] == 'Pronunciation':
+			Pronunciation()
+		elif sys.argv[1] == 'Tweet_whole_sentiment':
+			Tweet_whole_sentiment()
+		elif sys.argv[1] == 'Tweet_word_sentiment':
+			Tweet_word_sentiment()
 		else:
 			print 'other mode'
 
