@@ -9,7 +9,6 @@ import json
 import argparse
 import operator
 import datetime
-from bson.binary import Binary
 import re
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -114,7 +113,7 @@ class IronyTweet(object):
 """
 # Get the binary indicatior for whether the tweet contains a word in intensifiers
 def get_intensifiers(text):
-	inten_file = open('irony_package/intensifiers.txt', 'r')
+	inten_file = open('intensifiers.txt', 'r')
 	intensifier = 0
 
 	for line in inten_file.readlines():
@@ -145,7 +144,7 @@ start_time = datetime.datetime.now()
 for i in range(dbtweets.find().count()):
 	cur_time = datetime.datetime.now()
 	delta = cur_time - start_time
-	print 'this is the ', i+1, 'tweet', 'total time is: ', delta
+	#print 'this is the ', i+1, 'tweet', 'total time is: ', delta
 	tweet_id = dbtweets.find()[i]['tweet_id']
 	tweet_text = dbtweets.find()[i]['tweet_text']
 
@@ -154,65 +153,33 @@ for i in range(dbtweets.find().count()):
 		number_Polysyllables = Pron.count_number_Polysyllables(tweet_text)
 		unigrams = vect1.transform([tweet_text]).toarray()
 		S_uni = sparse.csr_matrix(unigrams)
-		serialized_uni = Binary(pickle.dumps(S_uni, protocol=0))
+		serialized_uni = pickle.dumps(S_uni, protocol=0)
 		bigrams = vect2.transform([tweet_text]).toarray()
 		S_bi = sparse.csr_matrix(bigrams)
-		serialized_bi = Binary(pickle.dumps(S_bi, protocol=0))
+		serialized_bi = pickle.dumps(S_bi, protocol=0)
 		intensifier = get_intensifiers(tweet_text)
-		print "tweet_text: ",tweet_text
-		print "test_author_name",test_author_name
-		print "unigrams: ",unigrams
-		print "bigrams: ", bigrams
-		print "S_bi: ", serialized_bi
-		print "S_uni: ", serialized_uni
-		print intensifier
-		print "number_no_vowels",number_no_vowels
-		print "number_Polysyllables", number_Polysyllables 
-		#result = dbtweets.update_one({"tweet_id": tweet_id},
-		#		{
-		#		    "$set": {
-		#                "intensifier": intensifier,
-		#                "word_unigrams": serialized_uni,
-		#                "word_bigrams": serialized_bi,
-		#				 "number_Polysyllables ": number_Polysyllables,
-		#				 "number_no_vowels": number_no_vowels
-		#        	}
-		#		}
-		#	)
-		break
+		#print "tweet_text: ",tweet_text
+		#print "test_author_name",test_author_name
+		#print "unigrams: ",unigrams
+		#print "bigrams: ", bigrams
+		#print "S_bi: ", serialized_bi
+		#print "S_uni: ", serialized_uni
+		#print intensifier
+		#print "number_no_vowels",number_no_vowels
+		#print "number_Polysyllables", number_Polysyllables 
+		result = dbtweets.update_one({"tweet_id": tweet_id},
+				{
+				    "$set": {
+		                "intensifier": intensifier,
+		                "word_unigrams": serialized_uni,
+		                "word_bigrams": serialized_bi,
+						 "number_Polysyllables ": number_Polysyllables,
+						 "number_no_vowels": number_no_vowels
+		        	}
+				}
+			)
+		
 	else:
 		continue
 
-
-
-
-
-
-
-
-# old one
-#-----------------------------
-
-# print test
-#newtweet = IronyTweet('_turgon', "In this country, \"democracy\" means pro-government. #irony")
-
-#print newtweet.get_unigrams_bigrams_count()[0]
-
-#newuser = User('spykeezy')
-#print newuser.get_profile
-#print newuser.get_top_100_tfidf_terms()
-"""
-print api.search_users('spykeezy')[0].location
-print api.search_users('spykeezy')[0].favourites_count
-print api.search_users('spykeezy')[0].followers_count
-print api.search_users('spykeezy')[0].time_zone
-print api.search_users('spykeezy')[0].friends_count
-print api.search_users('spykeezy')[0].created_at
-print api.search_users('spykeezy')[0].statuses_count
-print api.search_users('spykeezy')[0].screen_name
-print (api.search_users('spykeezy')[0].name).encode('utf8')
-print api.search_users('spykeezy')[0].name
-print '-'*40
-
-"""
 

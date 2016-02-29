@@ -1,7 +1,8 @@
-# Run by: python Model_historical_feature.py salient_terms
+# Run by: python Model_historical_feature.py Author_historical_salient_terms
 import sys
 import operator
 import numpy as np
+import pickle
 from pymongo import MongoClient
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -11,7 +12,7 @@ from sklearn.cross_validation import KFold
 from sklearn.metrics import roc_auc_score
 from sklearn import grid_search
 from sklearn import cross_validation
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, vstack
 
 # Generate the perdicting accuracy using only top 100 tfidf terms
 def Author_historical_salient_terms():
@@ -113,44 +114,51 @@ def Author_historical_sentiment():
 	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
 
 
-# Generate the perdicting accuracy using only historical sentiment
-def Author_historical_sentiment():
+# Generate the perdicting accuracy using only bag of words
+def word_unigrams_bigrams():
 # Connect to MongoDB
 	client = MongoClient('127.0.0.1', 27017)
 	db = client['IronyHQ']
 	dbtweets = db.tweets
 
-	sentiment_list = []
+	unigrams_list = csr_matrix([])
+	bigrams_list = csr_matrix([])
 	target_list = []
 	name_dict = {}
-	for i in xrange(dbtweets.find({'hist_sentiment_neutral':{'$exists':True}}).count()): 
+	for i in xrange(dbtweets.find({'word_unigrams':{'$exists':True}}).count()): 
 	#for i in xrange(1000):
 		try:
-			document = dbtweets.find({'hist_sentiment_neutral':{'$exists':True}})[i]
+			document = dbtweets.find({'word_unigrams':{'$exists':True}})[i]
 			author_full_name = document['author_full_name'].encode('utf-8')
-			hist_sentiment_neutral = float(document['hist_sentiment_neutral'])
-			hist_sentiment_positive = float(document['hist_sentiment_positive'])
-			hist_sentiment_very_positive = float(document['hist_sentiment_very_positive'])
-			hist_sentiment_negative = float(document['hist_sentiment_negative'])
-			hist_sentiment_very_negative = float(document['hist_sentiment_very_negative'])
-			sentiment_list.append([hist_sentiment_neutral, hist_sentiment_positive, hist_sentiment_very_positive, hist_sentiment_negative, hist_sentiment_very_negative])
+			word_unigrams = pickle.loads(document['word_unigrams'])
+			word_bigrams = pickle.loads(document['word_bigrams'])
+			
+			if unigrams_list.shape[1] == 0:
+				unigrams_list = word_unigrams
+			else:
+				unigrams_list = vstack([unigrams_list,word_unigrams])
+
+			if bigrams_list.shape[1] == 0:
+				bigrams_list = word_bigrams
+			else:
+				bigrams_list = vstack([bigrams_list,word_bigrams])
+
 			sarcasm_score = document['sarcasm_score']
 			
 			target_list.append(int(sarcasm_score.encode('utf-8')))
 			if author_full_name in name_dict:
-				name_dict[author_full_name].append(len(sentiment_list)-1)
+				name_dict[author_full_name].append(unigrams_list.shape[0]-1)
 			else:
-				name_dict[author_full_name] = [len(sentiment_list)-1]
-
+				name_dict[author_full_name] = [unigrams_list.shape[0]-1]
 		except ValueError:
 			continue
 	
 	client.close()
-	X = np.array(sentiment_list)
-	del sentiment_list
 	Y_target = np.array(target_list)
 	del target_list
-	result = LR_model(name_dict, X, Y_target)
+	result = LR_model(name_dict, unigrams_list, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+	result = LR_model(name_dict, bigrams_list, Y_target)
 	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
 
 # Logistic Regression Model with 10 layer Cross Validation. 
@@ -190,10 +198,10 @@ def LR_model(name_dict, X, Y):
 		y_true, y_pred = Y_test, tuned_clf.predict(X_test)
 		score = tuned_clf.score(X_test, Y_test)
 		del tuned_clf
-		#print 'score is ',score
+		print 'score is ',score
 		avg_score.append(score)
 		auc = roc_auc_score(y_true, y_pred)
-		#print 'auc is', auc 
+		print 'auc is', auc 
 		avg_auc_score.append(auc)
 
 	accuracy = reduce(lambda x, y: x + y, avg_score) / len(avg_score)
@@ -204,10 +212,12 @@ def LR_model(name_dict, X, Y):
 
 if __name__ == '__main__':
 	try:
-		if sys.argv[1] == 'salient_terms':
+		if sys.argv[1] == 'Author_historical_salient_terms':
 			Author_historical_salient_terms()
-		elif sys.argv[1] == 'sentiment':
+		elif sys.argv[1] == 'Author_historical_sentiment':
 			Author_historical_sentiment()
+		elif sys.argv[1] == 'word_unigrams_bigrams':
+			word_unigrams_bigrams()
 		else:
 			print 'other mode'
 
