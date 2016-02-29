@@ -13,7 +13,7 @@ from sklearn import grid_search
 from sklearn import cross_validation
 from scipy.sparse import csr_matrix
 
-# Generate the top 100 tfidf terms
+# Generate the perdicting accuracy using only top 100 tfidf terms
 def Author_historical_salient_terms():
 	# Connect to MongoDB
 	client = MongoClient('127.0.0.1', 27017)
@@ -60,7 +60,7 @@ def Author_historical_salient_terms():
 
 		except ValueError:
 			continue
-
+	
 	client.close()
 	count_vect = CountVectorizer(vocabulary=tfidf_dict.keys())
 	del tfidf_dict
@@ -69,7 +69,94 @@ def Author_historical_salient_terms():
 	#X = csr_matrix(X).toarray()
 	Y_target = np.array(target_list)
 	del target_list
-	print X.shape, Y_target.shape
+	result = LR_model(name_dict, X, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+
+# Generate the perdicting accuracy using only historical sentiment
+def Author_historical_sentiment():
+# Connect to MongoDB
+	client = MongoClient('127.0.0.1', 27017)
+	db = client['IronyHQ']
+	dbtweets = db.tweets
+
+	sentiment_list = []
+	target_list = []
+	name_dict = {}
+	for i in xrange(dbtweets.find({'hist_sentiment_neutral':{'$exists':True}}).count()): 
+	#for i in xrange(1000):
+		try:
+			document = dbtweets.find({'hist_sentiment_neutral':{'$exists':True}})[i]
+			author_full_name = document['author_full_name'].encode('utf-8')
+			hist_sentiment_neutral = float(document['hist_sentiment_neutral'])
+			hist_sentiment_positive = float(document['hist_sentiment_positive'])
+			hist_sentiment_very_positive = float(document['hist_sentiment_very_positive'])
+			hist_sentiment_negative = float(document['hist_sentiment_negative'])
+			hist_sentiment_very_negative = float(document['hist_sentiment_very_negative'])
+			sentiment_list.append([hist_sentiment_neutral, hist_sentiment_positive, hist_sentiment_very_positive, hist_sentiment_negative, hist_sentiment_very_negative])
+			sarcasm_score = document['sarcasm_score']
+			
+			target_list.append(int(sarcasm_score.encode('utf-8')))
+			if author_full_name in name_dict:
+				name_dict[author_full_name].append(len(sentiment_list)-1)
+			else:
+				name_dict[author_full_name] = [len(sentiment_list)-1]
+
+		except ValueError:
+			continue
+	
+	client.close()
+	X = np.array(sentiment_list)
+	del sentiment_list
+	Y_target = np.array(target_list)
+	del target_list
+	result = LR_model(name_dict, X, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+
+
+# Generate the perdicting accuracy using only historical sentiment
+def Author_historical_sentiment():
+# Connect to MongoDB
+	client = MongoClient('127.0.0.1', 27017)
+	db = client['IronyHQ']
+	dbtweets = db.tweets
+
+	sentiment_list = []
+	target_list = []
+	name_dict = {}
+	for i in xrange(dbtweets.find({'hist_sentiment_neutral':{'$exists':True}}).count()): 
+	#for i in xrange(1000):
+		try:
+			document = dbtweets.find({'hist_sentiment_neutral':{'$exists':True}})[i]
+			author_full_name = document['author_full_name'].encode('utf-8')
+			hist_sentiment_neutral = float(document['hist_sentiment_neutral'])
+			hist_sentiment_positive = float(document['hist_sentiment_positive'])
+			hist_sentiment_very_positive = float(document['hist_sentiment_very_positive'])
+			hist_sentiment_negative = float(document['hist_sentiment_negative'])
+			hist_sentiment_very_negative = float(document['hist_sentiment_very_negative'])
+			sentiment_list.append([hist_sentiment_neutral, hist_sentiment_positive, hist_sentiment_very_positive, hist_sentiment_negative, hist_sentiment_very_negative])
+			sarcasm_score = document['sarcasm_score']
+			
+			target_list.append(int(sarcasm_score.encode('utf-8')))
+			if author_full_name in name_dict:
+				name_dict[author_full_name].append(len(sentiment_list)-1)
+			else:
+				name_dict[author_full_name] = [len(sentiment_list)-1]
+
+		except ValueError:
+			continue
+	
+	client.close()
+	X = np.array(sentiment_list)
+	del sentiment_list
+	Y_target = np.array(target_list)
+	del target_list
+	result = LR_model(name_dict, X, Y_target)
+	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
+
+# Logistic Regression Model with 10 layer Cross Validation. 
+# trainning set(8/10), parameter development set(1/10), test set(1/10).
+def LR_model(name_dict, X, Y):
+	print "X and Y's shape are",X.shape, Y.shape
 	name_list = name_dict.keys()
 	total_set_length = len(name_list)
 	kf = KFold(total_set_length, n_folds=10)
@@ -87,7 +174,7 @@ def Author_historical_salient_terms():
 		test_index = np.array(temp_index)
 
 		X_train, X_test = X[train_index], X[test_index]
-		Y_train, Y_test = Y_target[train_index], Y_target[test_index]
+		Y_train, Y_test = Y[train_index], Y[test_index]
 		X_train_part, X_dev, Y_train_part, Y_dev = cross_validation.train_test_split(
 			X_train, Y_train, test_size = 0.11, random_state = 0)
 
@@ -97,27 +184,30 @@ def Author_historical_salient_terms():
 		clf.fit(X_dev, Y_dev)
 		best_params = clf.best_params_
 		del lr,clf
-		print best_params
+		#print best_params
 		tuned_clf = linear_model.LogisticRegression(penalty='l2', C=best_params['C'], tol=best_params['tol'])
 		tuned_clf.fit(X_train_part, Y_train_part)
 		y_true, y_pred = Y_test, tuned_clf.predict(X_test)
 		score = tuned_clf.score(X_test, Y_test)
 		del tuned_clf
-		print 'score is ',score
+		#print 'score is ',score
 		avg_score.append(score)
 		auc = roc_auc_score(y_true, y_pred)
-		print 'auc is', auc 
+		#print 'auc is', auc 
 		avg_auc_score.append(auc)
 
 	accuracy = reduce(lambda x, y: x + y, avg_score) / len(avg_score)
 	auc_score = reduce(lambda x, y: x + y, avg_auc_score) / len(avg_auc_score)
-	print 'accuracy is: %s, auc score is:%s'%(accuracy, auc_score)
+	#print 'accuracy is: %s, auc score is:%s'%(accuracy, auc_score)
+	return (accuracy,auc_score)
+
 
 if __name__ == '__main__':
 	try:
-		if sys.argv[1] == 'Author_historical_salient_terms':
+		if sys.argv[1] == 'salient_terms':
 			Author_historical_salient_terms()
-
+		elif sys.argv[1] == 'sentiment':
+			Author_historical_sentiment()
 		else:
 			print 'other mode'
 
