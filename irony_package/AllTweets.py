@@ -36,8 +36,8 @@ def collect_text():
 def collect_profiles():
 	profiles = []
 
-	for n in range(dbtweets.find().count()):
-		profile = dbtweets.find()[n]['profile']
+	for n in range(dbtweets.find({'profile':{"$exists": True}}).count()):
+		profile = dbtweets.find({'profile':{"$exists": True}})[n]['profile']
 		profiles.append(str(profile.encode('utf-8')))
 	
 	return profiles

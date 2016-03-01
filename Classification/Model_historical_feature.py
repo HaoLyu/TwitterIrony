@@ -176,7 +176,7 @@ def intensifier():
 		try:
 			document = dbtweets.find({'intensifier':{'$exists':True}})[i]
 			intensifier = document['intensifier']
-			intensifier_list.append(intensifier)
+			intensifier_list.append([intensifier])
 			sarcasm_score = document['sarcasm_score']
 			target_list.append(int(sarcasm_score.encode('utf-8')))
 			author_full_name = document['author_full_name'].encode('utf-8')
@@ -214,6 +214,9 @@ def Part_of_speech():
 			document = dbtweets.find({'lexical_density':{'$exists':True}})[i]
 			for a in TagList:			
 				a_ratio = a+'_ratio'
+				if a== '$':
+					a = 'numeral_pos'
+					a_ratio = a+'_ratio'
 				a_value = document[a]
 				a_ratio_value = document[a_ratio]
 				row_feature.append(a_value)
@@ -258,6 +261,8 @@ def Capitalization():
 			document = dbtweets.find({'lexical_density':{'$exists':True}})[i]
 			for a in TagList:			
 				a_cap_count = a+'_cap_count'
+				if a== '$':
+					a_cap_count = 'numeral_pos_cap'
 				a_value = document[a_cap_count]
 				row_feature.append(a_value)
 
@@ -323,19 +328,23 @@ def Tweet_whole_sentiment():
 	client = MongoClient('127.0.0.1', 27017)
 	db = client['IronyHQ']
 	dbtweets = db.tweets
-	senti_dict ={key:value for key, value in zip(["very negative", "negative", "neutral", "positive", "very positive"], range())}
+	senti_dict ={key:value for key, value in zip(["very negative", "negative", "neutral", "positive", "very positive"], range(5))}
 	original_whole_sentiment = [0, 0, 0, 0, 0]
 	Tweet_whole_sentiment_list = []
 	target_list = []
 	name_dict = {}
+	#for i in xrange(1000):
 	for i in xrange(dbtweets.find({'tweet_whole_sentimentpredict':{'$exists':True}}).count()): 
 		try:
 			document = dbtweets.find({'tweet_whole_sentimentpredict':{'$exists':True}})[i]
+			this_sentence_sentiment = []
 			author_full_name = document['author_full_name'].encode('utf-8')
-			Tweet_whole_sentiment_list.append([float(document["positivenode"]),float(document["negativenode"])])
+			this_sentence_sentiment.append(float(document["positivenode"]))
+			this_sentence_sentiment.append(float(document["negativenode"]))
 			whole_sentiment = document['tweet_whole_sentimentpredict']
 			original_whole_sentiment[senti_dict[whole_sentiment]] = 1
-			Tweet_whole_sentiment_list.append(original_whole_sentiment)
+			this_sentence_sentiment = this_sentence_sentiment + original_whole_sentiment
+			Tweet_whole_sentiment_list.append(this_sentence_sentiment)
 			sarcasm_score = document['sarcasm_score']
 			target_list.append(int(sarcasm_score.encode('utf-8')))
 
@@ -413,7 +422,7 @@ def LR_model(name_dict, X, Y):
 		X_train_part, X_dev, Y_train_part, Y_dev = cross_validation.train_test_split(
 			X_train, Y_train, test_size = 0.11, random_state = 0)
 
-		parameters = {'tol':[0.01,0.1,0.001], 'C':[1, 10, 100]}
+		parameters = {'tol':[0.001,0.01,0.0001], 'C':[0.1, 1, 10]}
 		lr = linear_model.LogisticRegression(penalty='l2')
 		clf = grid_search.GridSearchCV(lr, parameters)
 		clf.fit(X_dev, Y_dev)

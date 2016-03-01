@@ -3,32 +3,37 @@
 from AllTweets import collect_profiles
 from sklearn.feature_extraction.text import CountVectorizer
 from pymongo import MongoClient
+import Tweet_Transfer_BOW as BOW
 
 # Connect to MongoDB
 client = MongoClient('127.0.0.1', 27017)
 db = client['IronyHQ']
 dbtweets = db.tweets
 
-vectorizer = CountVectorizer(min_df=1)
-corpus = collect_profiles()
-X = vectorizer.fit_transform(corpus)
-names = vectorizer.get_feature_names()
+all_unigrams = BOW.Get_unigrams(collect_profiles())
+vect1 = CountVectorizer(vocabulary=all_unigrams)
 
-for i in range(0, len(X.toarray())):
-	profileAuthor = dbtweets.find()[i]['author_full_name']
-	for j in range(0, len(X.toarray()[i])):
-		if X.toarray()[i][j] > 1:
-			X.toarray()[i][j] = 1
-
-	unigrams_count = list(X.toarray()[i])
-
-	result = dbtweets.update_one({"author_full_name": profileAuthor},
+for i in range(dbtweets.find({'profile':{"$exists": True}}).count()):
+	tweet_id = dbtweets.find({'profile':{"$exists": True}})[i]['tweet_id']
+	profile = dbtweets.find({'profile':{"$exists": True}})[i]['profile']
+	profile_unigrams = vect1.transform(profile).toarray()
+	print profile_unigrams
+	print profile_unigrams[0]
+	print profile_unigrams.shape
+	print profile_unigrams[0].shape
+	break
+	for uu in xrange(profile_unigrams[0].shape[0]):
+		if profile_unigrams[0][uu]>1:
+			profile_unigrams[0][uu] = 1
+	S_uni = sparse.csr_matrix(profile_unigrams)
+	serialized_uni = pickle.dumps(S_uni, protocol=0)
+	result = dbtweets.update_one({"tweet_id": tweet_id},
 		{
 		    "$set": {
-                "profile_unigrams_names": names,
-                "profile_unigrams": unigrams_count
+                "profile_unigrams": serialized_uni
         	}
 		}
 	)
+	print 'No %d'%i
 
 

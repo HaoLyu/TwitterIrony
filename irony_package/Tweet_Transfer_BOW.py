@@ -28,6 +28,13 @@ def Get_unigrams_bigrams(corpus):
 	bigrams = bicount_vect.get_feature_names()
 	
 	return (unigrams, bigrams)
+
+def Get_unigrams(corpus):
+	unicount_vect = CountVectorizer(ngram_range=(1,1), lowercase = False,  stop_words='english',  token_pattern=r'\b\w+\b', min_df=1)
+	unicount = unicount_vect.fit_transform(corpus).toarray() 
+	unigrams = unicount_vect.get_feature_names()
+
+	return unigrams
 """
 def Get_unigrams(corpus, tweet):
 	# import countvectorzier to generate unigrams 
