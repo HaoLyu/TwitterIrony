@@ -63,7 +63,7 @@ def Author_historical_salient_terms():
 			continue
 	
 	client.close()
-	count_vect = CountVectorizer(vocabulary=tfidf_dict.keys())
+	count_vect = CountVectorizer(vocabulary=tfidf_dict.keys(),binary=True)
 	del tfidf_dict
 	X = count_vect.fit_transform(fit_tfidf_list)
 	del fit_tfidf_list
@@ -396,7 +396,7 @@ def Tweet_word_sentiment():
 	result = LR_model(name_dict, X, Y_target)
 	print 'accuracy is: %s, auc score is:%s'%(result[0], result[1])
 
-
+#SGD logloss
 # Logistic Regression Model with 10 layer Cross Validation. 
 # trainning set(8/10), parameter development set(1/10), test set(1/10).
 def LR_model(name_dict, X, Y):
@@ -422,7 +422,7 @@ def LR_model(name_dict, X, Y):
 		X_train_part, X_dev, Y_train_part, Y_dev = cross_validation.train_test_split(
 			X_train, Y_train, test_size = 0.11, random_state = 0)
 
-		parameters = {'tol':[0.001,0.01,0.0001], 'C':[0.1, 1, 10]}
+		parameters = {'tol':[0.001,0.0001], 'C':[0.00001, 0.0001, 0.001, 0.1, 1, 10]}
 		lr = linear_model.LogisticRegression(penalty='l2')
 		clf = grid_search.GridSearchCV(lr, parameters)
 		clf.fit(X_dev, Y_dev)

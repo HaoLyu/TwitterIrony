@@ -1,0 +1,2 @@
+python Model_historical_feature.py Tweet_word_sentiment
+python Model_historical_feature.py Tweet_whole_sentiment

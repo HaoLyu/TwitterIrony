@@ -19,7 +19,6 @@ with open(input_file,'rb') as f:
 	keys = r.fieldnames
 	for row in r:
 		author_full_name = row[keys[1]]
-		author_hist_list = row[keys[2]]
 		author_hist_list = row[keys[2]].split(", u")
 		author_hist_list[0] = author_hist_list[0].strip('[]')[1:]
 		author_hist_list[-1] = author_hist_list[-1].strip('[]')
