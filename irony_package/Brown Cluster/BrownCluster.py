@@ -1,5 +1,6 @@
 # input the sentences file and output a pickle file, meanwhile display first three output
 # Run by: python BrownCluster.py input.txt output.txt
+# It will also insert result into MongoDB
 import csv
 import nltk
 import pickle
